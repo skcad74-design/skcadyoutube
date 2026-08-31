@@ -5,7 +5,7 @@ from google import genai
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-from moviepy.editor import ImageClip
+from moviepy import ImageClip
 
 def generate_and_upload(video_num):
     print(f"--- Starting Video #{video_num} ---")
@@ -41,7 +41,7 @@ def generate_and_upload(video_num):
 
     # ৩. MoviePy দিয়ে ভিডিও তৈরি (৫ সেকেন্ড)
     print("Creating Video...")
-    clip = ImageClip(image_filename).set_duration(5)
+    clip = ImageClip(image_filename).with_duration(5)
     clip.write_videofile(video_filename, fps=24, codec="libx264")
 
     # ৪. YouTube API দিয়ে আপলোড
@@ -84,4 +84,4 @@ if __name__ == "__main__":
         generate_and_upload(i)
         if i == 1:
             print("Waiting 30 seconds before generating next video...")
-            time.sleep(30) # ২য় ভিডিও তৈরির আগে ৩০ সেকেন্ডের বিরতি
+            time.sleep(30)
