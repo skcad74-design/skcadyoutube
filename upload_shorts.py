@@ -10,17 +10,17 @@ from moviepy import ImageClip
 def generate_and_upload(video_num):
     print(f"--- Starting Video #{video_num} ---")
     
-    # ১. জেমিনি এপিআই দিয়ে প্রম্পট ও মেটাডেটা তৈরি (মডেল আপডেট করা হয়েছে)
+    # ১. জেমিনি এপিআই দিয়ে প্রম্পট ও মেটাডেটা তৈরি (gemini-1.5-flash ব্যবহার করা হয়েছে)
     client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
     prompt_response = client.models.generate_content(
-        model="gemini-2.5-flash-latest",
+        model="gemini-1.5-flash",
         contents="Generate a detailed unique text-to-image prompt for a high-end luxury jewelry piece (like a gold necklace, diamond ring, or royal bracelet) on a dark cinematic background.",
     )
     image_prompt = prompt_response.text
 
     meta_response = client.models.generate_content(
-        model="gemini-2.5-flash-latest",
+        model="gemini-1.5-flash",
         contents=f"Write an engaging YouTube Shorts Title and Description with hashtags for this jewelry concept: '{image_prompt}'. Format as TITLE: <title> \n DESCRIPTION: <description>",
     )
     meta_text = meta_response.text
