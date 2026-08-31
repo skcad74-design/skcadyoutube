@@ -1,37 +1,46 @@
 import os
 import time
+import random
 import requests
-import google.generativeai as genai
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from moviepy import ImageClip
 
-# ১. Gemini API কনফিগার করা
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-1.5-flash")
+# জুয়েলারির বিভিন্ন উপাদানের তালিকা (যা থেকে স্বয়ংক্রিয়ভাবে প্রম্পট তৈরি হবে)
+JEWELRY_TYPES = [
+    "diamond ring", "gold necklace", "royal emerald pendant", 
+    "ruby bracelet", "sapphire earrings", "luxury gold bangle"
+]
+
+STYLES = [
+    "luxurious cinematic lighting", "royal elegance style", 
+    "ultra high-end fashion photorealistic", "sparkling glow in dark studio background"
+]
 
 def generate_and_upload(video_num):
     print(f"--- Starting Video #{video_num} ---")
     
-    # ২. প্রম্পট ও ভিডিওর টাইটেল/ডেসক্রিপশন তৈরি
-    prompt_response = model.generate_content(
-        "Generate a detailed unique text-to-image prompt for a high-end luxury jewelry piece (like a gold necklace, diamond ring, or royal bracelet) on a dark cinematic background."
-    )
-    image_prompt = prompt_response.text
+    # ১. র‍্যান্ডম প্রম্পট ও মেটাডেটা তৈরি
+    item = random.choice(JEWELRY_TYPES)
+    style = random.choice(STYLES)
+    
+    image_prompt = f"A masterpiece {item}, {style}, 8k resolution, detailed craftsmanship, macro view."
+    
+    title = f"Exclusive Luxury {item.title()} Design ✨ #shorts #jewelry"
+    description = f"Check out this breathtaking {item}! Perfect for luxury lovers.\n\n#jewelry #gold #{item.replace(' ', '')} #fashion #luxury #shorts"
 
-    meta_response = model.generate_content(
-        f"Write an engaging YouTube Shorts Title and Description with hashtags for this jewelry concept: '{image_prompt}'. Format as TITLE: <title> \n DESCRIPTION: <description>"
-    )
-    meta_text = meta_response.text
-
-    title = meta_text.split("DESCRIPTION:")[0].replace("TITLE:", "").strip()
-    description = meta_text.split("DESCRIPTION:")[1].strip() if "DESCRIPTION:" in meta_text else meta_text
-
-    # ৩. Pollinations AI দিয়ে ইমেজ তৈরি
-    print("Generating Image...")
+    # ২. Pollinations AI দিয়ে ফ্রি ইমেজ তৈরি
+    print(f"Generating Image for: {item}...")
     img_url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(image_prompt)}?width=1080&height=1920&nologo=true"
-    img_data = requests.get(img_url).content
+    
+    # ব্যাকআপ ইমেজ ট্রাই করা
+    try:
+        img_data = requests.get(img_url, timeout=30).content
+    except Exception as e:
+        print(f"Image generation failed, retrying... Error: {e}")
+        time.sleep(5)
+        img_data = requests.get(img_url, timeout=30).content
     
     image_filename = f"jewelry_{video_num}.jpg"
     video_filename = f"final_shorts_{video_num}.mp4"
@@ -39,12 +48,12 @@ def generate_and_upload(video_num):
     with open(image_filename, "wb") as handler:
         handler.write(img_data)
 
-    # ৪. MoviePy দিয়ে ভিডিও তৈরি (৫ সেকেন্ড)
+    # ৩. MoviePy দিয়ে শর্ট ভিডিও তৈরি (৫ সেকেন্ড)
     print("Creating Video...")
     clip = ImageClip(image_filename).with_duration(5)
     clip.write_videofile(video_filename, fps=24, codec="libx264")
 
-    # ৫. YouTube API দিয়ে আপলোড
+    # ৪. YouTube API দিয়ে আপলোড
     print("Uploading to YouTube...")
     creds = Credentials(
         token=None,
