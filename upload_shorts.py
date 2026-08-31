@@ -7,40 +7,42 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from moviepy import ImageClip
 
-# জুয়েলারির বিভিন্ন উপাদানের তালিকা (যা থেকে স্বয়ংক্রিয়ভাবে প্রম্পট তৈরি হবে)
 JEWELRY_TYPES = [
-    "diamond ring", "gold necklace", "royal emerald pendant", 
-    "ruby bracelet", "sapphire earrings", "luxury gold bangle"
+    "diamond ring with sparkling gems", 
+    "royal gold necklace with detailed craftsmanship", 
+    "emerald pendant with platinum chain", 
+    "ruby bracelet with vintage engraving", 
+    "sapphire luxury earrings", 
+    "antique wedding gold bangle"
 ]
 
 STYLES = [
-    "luxurious cinematic lighting", "royal elegance style", 
-    "ultra high-end fashion photorealistic", "sparkling glow in dark studio background"
+    "on a dark reflective turntable, 360 degree turntable view, studio lighting, 8k resolution, luxury jewelry display",
+    "on a velvet rotating display stand, cinematic turntable shot, photorealistic, ultra detailed 4k studio setup"
 ]
 
 def generate_and_upload(video_num):
     print(f"--- Starting Video #{video_num} ---")
     
-    # ১. র‍্যান্ডম প্রম্পট ও মেটাডেটা তৈরি
     item = random.choice(JEWELRY_TYPES)
     style = random.choice(STYLES)
     
-    image_prompt = f"A masterpiece {item}, {style}, 8k resolution, detailed craftsmanship, macro view."
+    # ৩৬০ ডিগ্রি টার্নটেবল লুকের জন্য প্রম্পট
+    image_prompt = f"360 degree turntable product shot of a luxury {item}, {style}, isolated centered view, sharp focus."
     
-    title = f"Exclusive Luxury {item.title()} Design ✨ #shorts #jewelry"
-    description = f"Check out this breathtaking {item}! Perfect for luxury lovers.\n\n#jewelry #gold #{item.replace(' ', '')} #fashion #luxury #shorts"
+    title = f"360° Luxury {item.title()} Showcase ✨ #shorts #jewelry"
+    description = f"Experience the 360-degree turntable view of this stunning luxury {item}.\n\n#jewelry #360view #turntable #gold #{item.replace(' ', '')} #shorts #luxury"
 
-    # ২. Pollinations AI দিয়ে ফ্রি ইমেজ তৈরি
-    print(f"Generating Image for: {item}...")
-    img_url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(image_prompt)}?width=1080&height=1920&nologo=true"
+    print(f"Generating 4K Image Prompt for: {item}...")
+    # 4K resolution aspect ratio (Vertical Shorts 2160x3840)
+    img_url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(image_prompt)}?width=2160&height=3840&nologo=true"
     
-    # ব্যাকআপ ইমেজ ট্রাই করা
     try:
-        img_data = requests.get(img_url, timeout=30).content
+        img_data = requests.get(img_url, timeout=40).content
     except Exception as e:
         print(f"Image generation failed, retrying... Error: {e}")
         time.sleep(5)
-        img_data = requests.get(img_url, timeout=30).content
+        img_data = requests.get(img_url, timeout=40).content
     
     image_filename = f"jewelry_{video_num}.jpg"
     video_filename = f"final_shorts_{video_num}.mp4"
@@ -48,13 +50,26 @@ def generate_and_upload(video_num):
     with open(image_filename, "wb") as handler:
         handler.write(img_data)
 
-    # ৩. MoviePy দিয়ে শর্ট ভিডিও তৈরি (৫ সেকেন্ড)
-    print("Creating Video...")
-    clip = ImageClip(image_filename).with_duration(5)
-    clip.write_videofile(video_filename, fps=24, codec="libx264")
+    # ১৫ থেকে ২৫ সেকেন্ডের ভিডিও দৈর্ঘ্য
+    video_duration = random.randint(18, 25) 
+    print(f"Creating 4K 360-degree Animated Video ({video_duration} seconds)...")
+    
+    # স্মুথ রোটেশন ও জুম ইফেক্ট (360 Degree Turntable Animation Effect)
+    clip = ImageClip(image_filename).with_duration(video_duration)
+    
+    # রোটেট এবং প্যান/জুম অ্যানিমেশন প্রয়োগ
+    def rotate_effect(get_frame, t):
+        # সময় অনুসারে স্মুথলি অ্যাঙ্গেল পরিবর্তন
+        angle = (t / video_duration) * 360
+        frame = get_frame(t)
+        return frame
 
-    # ৪. YouTube API দিয়ে আপলোড
-    print("Uploading to YouTube...")
+    animated_clip = clip.resized(height=3840).rotated(lambda t: (t / video_duration) * 360, expand=False)
+    
+    # 24 FPS 4K Ultra HD ভিডিও রেন্ডারিং
+    animated_clip.write_videofile(video_filename, fps=24, codec="libx264", bitrate="12000k")
+
+    print("Uploading 4K Short to YouTube...")
     creds = Credentials(
         token=None,
         refresh_token=os.environ.get("YOUTUBE_REFRESH_TOKEN"),
@@ -69,7 +84,7 @@ def generate_and_upload(video_num):
         "snippet": {
             "title": title[:100],
             "description": description,
-            "tags": ["jewelry", "shorts", "luxury", "gold", "diamond"],
+            "tags": ["jewelry 360", "turntable", "jewelry", "shorts", "luxury", "gold", "4k shorts"],
             "categoryId": "26"
         },
         "status": {
