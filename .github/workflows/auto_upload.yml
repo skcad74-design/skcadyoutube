@@ -2,9 +2,8 @@ name: Auto Generate and Upload Jewelry Shorts
 
 on:
   schedule:
-    # বাংলাদেশ সময় সকাল ৯টা (UTC 3:00), বিকাল ৪টা (UTC 10:00) এবং রাত ৯টা (UTC 15:00)
     - cron: '0 3,10,15 * * *'
-  workflow_dispatch: # ম্যানুয়ালি টেস্ট করার জন্য
+  workflow_dispatch:
 
 jobs:
   build-and-upload:
@@ -16,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Install System Dependencies
         run: |
