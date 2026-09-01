@@ -8,19 +8,37 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-# HD ও Ultra-Detailed প্রম্পট
-JEWELRY_PROMPT = (
-    "A 4k UHD photorealistic product shot of a luxury solitaire diamond ring with white gold band, "
-    "centered on a clean pure white studio background, soft realistic reflection, studio softbox lighting, "
-    "sharp focus on diamond facets, 8k render, professional jewelry photography, no hands, no person, no model"
-)
+# আপনার দেওয়া ৩টি রেফারেন্স ইমেজের ওপর ভিত্তি করে তৈরি প্রম্পট লিস্ট
+PROMPTS = [
+    # ১. Cushion-cut Blue Sapphire & Diamond Ring (প্রথম ছবির মতো)
+    (
+        "A 4k UHD photorealistic product shot of a luxury 18k yellow gold trilogy ring with a cushion-cut blue sapphire center stone "
+        "and two trillion-cut diamond side stones, centered on a clean pure white studio background with soft realistic reflection, "
+        "studio softbox lighting, sharp focus on sapphire facets, 8k render, professional jewelry photography, no hands, no person, no model"
+    ),
+    # ২. Nature-inspired Leaf & Diamond Stackable Band (দ্বিতীয় ছবির মতো)
+    (
+        "A 4k UHD photorealistic product shot of a delicate 18k yellow gold nature-inspired leaf pattern band studded with small round diamonds, "
+        "upright and centered on a clean pure white studio background, soft realistic shadow, studio softbox lighting, "
+        "sharp focus on gold leaf details and diamonds, 8k render, luxury jewelry photography, no hands, no person, no model"
+    ),
+    # ৩. Textured/Hammered Gold Band with Small Diamond (তৃতীয় ছবির মতো)
+    (
+        "A 4k UHD photorealistic product shot of a wide 18k yellow gold band with a textured hammered surface and a single small embedded diamond, "
+        "centered on a clean pure white studio background with soft realistic reflection, studio softbox lighting, "
+        "sharp focus on gold texture, 8k render, professional jewelry photography, no hands, no person, no model"
+    )
+]
 
 def generate_video_with_ffmpeg():
     print("--- 1. Generating 4K HD Image via Pollinations AI ---")
+    
+    # প্রতিবার রান হলে প্রম্পটগুলো থেকে একটি এলোমেলোভাবে বেছে নেওয়া হবে
+    selected_prompt = random.choice(PROMPTS)
     seed = random.randint(1, 99999)
     
     # Ultra HD 4K Resolution (2160x3840)
-    img_url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(JEWELRY_PROMPT)}?width=2160&height=3840&nologo=true&seed={seed}&quality=100"
+    img_url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(selected_prompt)}?width=2160&height=3840&nologo=true&seed={seed}&quality=100"
     
     try:
         response = requests.get(img_url, timeout=90)
@@ -39,7 +57,7 @@ def generate_video_with_ffmpeg():
 
     print("--- 2. Converting Image to 4K Video using High-Bitrate FFmpeg ---")
     
-    # 4K Rendering Command with High Bitrate (30M) and CRf 17 (Visually Lossless Quality)
+    # 4K Rendering Command with High Bitrate (30M) and CRF 17 (Visually Lossless Quality)
     ffmpeg_cmd = [
         'ffmpeg', '-y',
         '-loop', '1',
@@ -86,9 +104,9 @@ def upload_to_youtube(video_filename):
 
     request_body = {
         "snippet": {
-            "title": "4K 360° Luxury Diamond Solitaire Ring Showcase ✨ #shorts #jewelry",
-            "description": "Experience the ultra-HD 4K view of this luxury solitaire diamond ring.\n\n#jewelry #diamondring #shorts #luxury #4k",
-            "tags": ["jewelry", "shorts", "luxury", "gold", "diamond", "4k"],
+            "title": "4K Luxury Fine Jewelry Design Showcase ✨ #shorts #jewelry",
+            "description": "Experience the ultra-HD 4K view of this handcrafted luxury gold ring design.\n\n#jewelry #goldring #shorts #luxury #4k #craftsmanship",
+            "tags": ["jewelry", "shorts", "luxury", "gold", "ring", "4k"],
             "categoryId": "26"
         },
         "status": {
