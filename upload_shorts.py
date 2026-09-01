@@ -8,37 +8,33 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-# আপনার দেওয়া ৩টি রেফারেন্স ইমেজের ওপর ভিত্তি করে তৈরি প্রম্পট লিস্ট
+# আপনার ছবির সাথে পুরোপুরি মানানসই সহজ ও নিখুঁত ৩টি প্রম্পট
 PROMPTS = [
-    # ১. Cushion-cut Blue Sapphire & Diamond Ring (প্রথম ছবির মতো)
+    # ১. Blue Sapphire with Triangles (আপনার ১ নং ছবি)
     (
-        "A 4k UHD photorealistic product shot of a luxury 18k yellow gold trilogy ring with a cushion-cut blue sapphire center stone "
-        "and two trillion-cut diamond side stones, centered on a clean pure white studio background with soft realistic reflection, "
-        "studio softbox lighting, sharp focus on sapphire facets, 8k render, professional jewelry photography, no hands, no person, no model"
+        "3d cad render of a high polish 18k yellow gold ring, cushion blue sapphire center stone, "
+        "two white triangle side diamonds, gold prongs, white background, studio light, jewelry photo"
     ),
-    # ২. Nature-inspired Leaf & Diamond Stackable Band (দ্বিতীয় ছবির মতো)
+    # ২. Leaf Pattern Stacking Band (আপনার ২ নং ছবি)
     (
-        "A 4k UHD photorealistic product shot of a delicate 18k yellow gold nature-inspired leaf pattern band studded with small round diamonds, "
-        "upright and centered on a clean pure white studio background, soft realistic shadow, studio softbox lighting, "
-        "sharp focus on gold leaf details and diamonds, 8k render, luxury jewelry photography, no hands, no person, no model"
+        "3d cad render of a polished 18k yellow gold eternity ring with small gold leaves and sparkling round diamonds, "
+        "nature floral design band, white background, realistic jewelry photo"
     ),
-    # ৩. Textured/Hammered Gold Band with Small Diamond (তৃতীয় ছবির মতো)
+    # ৩. Gold Band with Small Diamond (আপনার ৩ নং ছবি)
     (
-        "A 4k UHD photorealistic product shot of a wide 18k yellow gold band with a textured hammered surface and a single small embedded diamond, "
-        "centered on a clean pure white studio background with soft realistic reflection, studio softbox lighting, "
-        "sharp focus on gold texture, 8k render, professional jewelry photography, no hands, no person, no model"
+        "3d cad render of a simple smooth shiny 18k yellow gold wedding band, set with one tiny small diamond, "
+        "minimalist luxury gold ring, white studio background, high quality jewelry photography"
     )
 ]
 
 def generate_video_with_ffmpeg():
-    print("--- 1. Generating 4K HD Image via Pollinations AI ---")
+    print("--- 1. Generating Image via Pollinations AI ---")
     
-    # প্রতিবার রান হলে প্রম্পটগুলো থেকে একটি এলোমেলোভাবে বেছে নেওয়া হবে
     selected_prompt = random.choice(PROMPTS)
     seed = random.randint(1, 99999)
     
-    # Ultra HD 4K Resolution (2160x3840)
-    img_url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(selected_prompt)}?width=2160&height=3840&nologo=true&seed={seed}&quality=100"
+    # রেজোলিউশন ১০৮০x১৯২০ রাখা হয়েছে যাতে নিখুঁত ও স্পষ্ট রেন্ডার হয়
+    img_url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(selected_prompt)}?width=1080&height=1920&nologo=true&seed={seed}&model=flux"
     
     try:
         response = requests.get(img_url, timeout=90)
@@ -55,18 +51,17 @@ def generate_video_with_ffmpeg():
     with open(image_filename, "wb") as f:
         f.write(img_data)
 
-    print("--- 2. Converting Image to 4K Video using High-Bitrate FFmpeg ---")
+    print("--- 2. Converting Image to HD Video using FFmpeg ---")
     
-    # 4K Rendering Command with High Bitrate (30M) and CRF 17 (Visually Lossless Quality)
+    # FFmpeg zoom effect to create video
     ffmpeg_cmd = [
         'ffmpeg', '-y',
         '-loop', '1',
         '-i', image_filename,
-        '-vf', "zoompan=z='min(zoom+0.0012,1.12)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=300:s=2160x3840",
+        '-vf', "zoompan=z='min(zoom+0.0015,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=300:s=1080x1920",
         '-c:v', 'libx264',
-        '-preset', 'slow',
-        '-crf', '17',
-        '-b:v', '30M',
+        '-preset', 'fast',
+        '-crf', '18',
         '-t', '10',
         '-pix_fmt', 'yuv420p',
         '-r', '30',
@@ -78,11 +73,11 @@ def generate_video_with_ffmpeg():
         print(f"FFmpeg Error: {result.stderr}")
         sys.exit(1)
         
-    print("4K Ultra HD Video Created Successfully!")
+    print("Video Created Successfully!")
     return image_filename, video_filename
 
 def upload_to_youtube(video_filename):
-    print("--- 3. Uploading 4K Short to YouTube ---")
+    print("--- 3. Uploading Short to YouTube ---")
     
     refresh_token = os.environ.get("YOUTUBE_REFRESH_TOKEN")
     client_id = os.environ.get("YOUTUBE_CLIENT_ID")
@@ -104,9 +99,9 @@ def upload_to_youtube(video_filename):
 
     request_body = {
         "snippet": {
-            "title": "4K Luxury Fine Jewelry Design Showcase ✨ #shorts #jewelry",
-            "description": "Experience the ultra-HD 4K view of this handcrafted luxury gold ring design.\n\n#jewelry #goldring #shorts #luxury #4k #craftsmanship",
-            "tags": ["jewelry", "shorts", "luxury", "gold", "ring", "4k"],
+            "title": "Luxury 18k Gold Ring Design Showcase ✨ #shorts #jewelry",
+            "description": "Explore this stunning 3D CAD rendered gold jewelry design.\n\n#jewelry #goldring #shorts #luxury #cad #engagementring",
+            "tags": ["jewelry", "shorts", "luxury", "gold", "ring", "cad"],
             "categoryId": "26"
         },
         "status": {
@@ -128,7 +123,7 @@ def upload_to_youtube(video_filename):
         if status:
             print(f"Uploaded {int(status.progress() * 100)}%")
 
-    print(f"4K Video uploaded successfully! Video ID: {response.get('id')}\n")
+    print(f"Video uploaded successfully! Video ID: {response.get('id')}\n")
 
 if __name__ == "__main__":
     img_file, vid_file = generate_video_with_ffmpeg()
