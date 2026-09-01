@@ -7,16 +7,19 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
+# ছোট ও নিখুঁত প্রম্পট (যেন শুধু রিং তৈরি হয়)
 JEWELRY_PROMPT = (
-    "Create a premium photorealistic 3D jewelry product shot of a luxurious solitaire diamond ring "
-    "made of highly polished white gold/platinum with a round brilliant-cut center diamond surrounded by a delicate halo of small diamonds. "
-    "Positioned upright and centered on a clean pure white studio background with soft realistic shadows. "
-    "Ultra-realistic jewelry CGI, luxury jewelry advertisement, 4K quality, sharp focus, isolated centered view."
+    "A 3D product shot of a luxury solitaire diamond ring with white gold band, "
+    "centered on a clean white background, soft realistic shadow, studio lighting, "
+    "high quality product render, 8k, sharp focus, no model, no person, no hands, no face"
 )
 
 def generate_video_with_ffmpeg():
     print("--- 1. Generating Free Image via Pollinations AI ---")
-    img_url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(JEWELRY_PROMPT)}?width=1080&height=1920&nologo=true"
+    
+    # Random seed যোগ করা হয়েছে যাতে প্রতিবার নতুন রিংয়ের ছবি আসে
+    seed = random.randint(1, 99999)
+    img_url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(JEWELRY_PROMPT)}?width=1080&height=1920&nologo=true&seed={seed}"
     
     try:
         response = requests.get(img_url, timeout=60)
@@ -104,6 +107,7 @@ def upload_to_youtube(video_filename):
     print(f"Video uploaded successfully! Video ID: {response.get('id')}\n")
 
 if __name__ == "__main__":
+    import random
     img_file, vid_file = generate_video_with_ffmpeg()
     
     try:
