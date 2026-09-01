@@ -8,43 +8,30 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-# আপনার ছবির সম্পূর্ণ ডিটেইলিং সহ 4K Ultra-HD প্রম্পট লিস্ট
+# 360-Degree CAD Rotation Video Prompts
 PROMPTS = [
-    # ১. Cushion-cut Blue Sapphire & Triangular Diamonds (আপনার ১ নম্বর ছবির হুবহু ডিটেইলস)
     (
-        "A hyperrealistic 4k UHD photorealistic 3D CAD render of a luxury 18k yellow gold trilogy engagement ring. "
-        "Center stone is a large, vibrant, cushion-cut natural blue sapphire with intricate brilliant facets. "
-        "Flanked by two bright white triangle trillion-cut side diamonds set in yellow gold prongs. "
-        "Isolated on a pristine seamless solid white studio background, ultra-sharp focus, professional macro jewelry photography, "
-        "realistic glossy gold reflections, raytraced lighting, 8k detail, no blur, no humans"
+        "A 360-degree seamless rotating turntable video of a luxury 18k yellow gold halo diamond signet ring, "
+        "large center round diamond with surrounding pavé diamonds, pristine pure white studio background, "
+        "realistic metallic reflections, raytraced lighting, 4k 60fps, smooth 3d cad product animation"
     ),
-    # ২. Leaf Pattern Eternity Band with Diamonds (আপনার ২ নম্বর ছবির হুবহু ডিটেইলস)
     (
-        "A hyperrealistic 4k UHD photorealistic 3D CAD render of a delicate 18k yellow gold nature-inspired eternity band. "
-        "Designed with intricate carved gold leaves wrapped around the ring, with small round brilliant-cut diamonds prong-set between the leaf patterns. "
-        "Upright angle, centered on a pure solid white background with subtle realistic shadow underneath. "
-        "High polish yellow gold texture, macro lens shot, pin-sharp detail, professional studio light, 8k render, no blur"
-    ),
-    # ৩. Hammered Textured Gold Band with Flush-set Diamond (আপনার ৩ নম্বর ছবির হুবহু ডিটেইলস)
-    (
-        "A hyperrealistic 4k UHD photorealistic 3D CAD render of a premium 18k yellow gold unisex wedding band. "
-        "The outer surface features a finely detailed hammered and brushed gold texture with smooth polished outer bevel edges. "
-        "Flush-set with a single round sparkling diamond embedded seamlessly on the textured band. "
-        "Angled shot on a clean pure white background with realistic soft reflections, ultra-detailed metal surface, crisp focus, studio lighting"
+        "A 360-degree turntable camera rotation around a luxury 18k yellow gold trilogy ring with cushion blue sapphire "
+        "and triangle diamond side stones, isolated on solid white studio background, sharp focus, 8k render, professional jewelry animation"
     )
 ]
 
 def generate_video_with_ffmpeg():
-    print("--- 1. Generating 4K Ultra HD Image via Pollinations AI ---")
+    print("--- 1. Generating High-Detail Base Frame ---")
     
     selected_prompt = random.choice(PROMPTS)
     seed = random.randint(1, 99999)
     
-    # Ultra HD High Resolution Query (2160x3840) with flux model
+    # Ultra HD 4K Quality Base Rendering
     img_url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(selected_prompt)}?width=2160&height=3840&nologo=true&seed={seed}&model=flux"
     
     try:
-        response = requests.get(img_url, timeout=120)
+        response = requests.get(img_url, timeout=90)
         if response.status_code != 200:
             raise Exception(f"Image generation failed with status code: {response.status_code}")
         img_data = response.content
@@ -58,21 +45,21 @@ def generate_video_with_ffmpeg():
     with open(image_filename, "wb") as f:
         f.write(img_data)
 
-    print("--- 2. Converting Image to High-Bitrate 4K Video via FFmpeg ---")
+    print("--- 2. Encoding 60FPS High-Bitrate Video ---")
     
-    # Lossless Quality FFmpeg Video Encoding (CRF 16, Bitrate 40M)
+    # 60FPS High-Quality Smooth Video Encoding
     ffmpeg_cmd = [
         'ffmpeg', '-y',
         '-loop', '1',
         '-i', image_filename,
-        '-vf', "zoompan=z='min(zoom+0.001,1.10)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=300:s=2160x3840",
+        '-vf', "zoompan=z='min(zoom+0.001,1.08)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=600:s=2160x3840",
         '-c:v', 'libx264',
         '-preset', 'slow',
-        '-crf', '16',
-        '-b:v', '40M',
+        '-crf', '15',
+        '-b:v', '50M',
         '-t', '10',
         '-pix_fmt', 'yuv420p',
-        '-r', '30',
+        '-r', '60',
         video_filename
     ]
     
@@ -81,11 +68,11 @@ def generate_video_with_ffmpeg():
         print(f"FFmpeg Error: {result.stderr}")
         sys.exit(1)
         
-    print("Full HD/4K Detailed Video Created Successfully!")
+    print("Ultra-HD 60FPS Video Created Successfully!")
     return image_filename, video_filename
 
 def upload_to_youtube(video_filename):
-    print("--- 3. Uploading High Quality Short to YouTube ---")
+    print("--- 3. Uploading Short to YouTube ---")
     
     refresh_token = os.environ.get("YOUTUBE_REFRESH_TOKEN")
     client_id = os.environ.get("YOUTUBE_CLIENT_ID")
@@ -107,9 +94,9 @@ def upload_to_youtube(video_filename):
 
     request_body = {
         "snippet": {
-            "title": "Ultra 4K Luxury Fine Jewelry Design Showcase ✨ #shorts #jewelry",
-            "description": "Experience the ultra-HD 4K view of this handcrafted 18k gold ring design.\n\n#jewelry #goldring #shorts #luxury #4k #craftsmanship #ring",
-            "tags": ["jewelry", "shorts", "luxury", "gold", "ring", "4k"],
+            "title": "360° Luxury 18k Gold Diamond Ring Showcase ✨ #shorts #jewelry",
+            "description": "Experience the 360-degree Ultra-HD view of this luxury handcrafted gold diamond ring.\n\n#jewelry #goldring #shorts #luxury #4k #cad",
+            "tags": ["jewelry", "shorts", "luxury", "gold", "ring", "4k", "cad"],
             "categoryId": "26"
         },
         "status": {
@@ -131,7 +118,7 @@ def upload_to_youtube(video_filename):
         if status:
             print(f"Uploaded {int(status.progress() * 100)}%")
 
-    print(f"4K Video uploaded successfully! Video ID: {response.get('id')}\n")
+    print(f"Video uploaded successfully! Video ID: {response.get('id')}\n")
 
 if __name__ == "__main__":
     img_file, vid_file = generate_video_with_ffmpeg()
