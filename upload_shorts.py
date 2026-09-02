@@ -18,27 +18,26 @@ def process_multi_image_video():
 
     images = [f for f in os.listdir(IMAGE_FOLDER) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
     
-    if len(images) < 2:
-        print("Error: Need at least 2 images in the 'images' folder to create a slideshow!")
+    if len(images) < 3:
+        print("Error: Need at least 3 images in the 'images' folder!")
         sys.exit(1)
 
-    # ২ থেকে ৩টি ছবি র্যান্ডমলি সিলেক্ট করা
-    num_to_select = min(random.randint(2, 3), len(images))
+    # ৩ থেকে ৪টি ছবি র্যান্ডমলি সিলেক্ট করা
+    num_to_select = min(random.randint(3, 4), len(images))
     selected_images = [os.path.join(IMAGE_FOLDER, img) for img in random.sample(images, num_to_select)]
     print(f"Selected {len(selected_images)} Images: {selected_images}")
 
-    # প্রতিটি ইমেজের জন্য আলাদা ক্লিপ জেনারেট করা (৫ সেকেন্ড করে)
     temp_clips = []
     for idx, img_path in enumerate(selected_images):
         clip_name = f"temp_clip_{idx}.mp4"
         
-        # জুম ইন এবং জুম আউট অল্টারনেট ইফেক্ট
+        # অত্যন্ত স্মুথ জুম ইন এবং জুম আউট ক্যালকুলেশন (৬০ FPS - ৫ সেকেন্ড)
         if idx % 2 == 0:
-            # Zoom In
-            zoom_filter = "zoompan=z='min(zoom+0.0015,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=300:s=1080x1920"
+            # Smooth Zoom In
+            zoom_filter = "zoompan=z='min(1.0+0.0005*on,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=300:s=1080x1920:fps=60"
         else:
-            # Zoom Out
-            zoom_filter = "zoompan=z='max(1.15-0.0015*on,1.0)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=300:s=1080x1920"
+            # Smooth Zoom Out
+            zoom_filter = "zoompan=z='max(1.15-0.0005*on,1.0)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=300:s=1080x1920:fps=60"
 
         ffmpeg_clip_cmd = [
             'ffmpeg', '-y',
@@ -46,8 +45,8 @@ def process_multi_image_video():
             '-i', img_path,
             '-vf', zoom_filter,
             '-c:v', 'libx264',
-            '-preset', 'fast',
-            '-crf', '18',
+            '-preset', 'slow',
+            '-crf', '16',
             '-t', '5',
             '-pix_fmt', 'yuv420p',
             '-r', '60',
@@ -61,7 +60,7 @@ def process_multi_image_video():
             
         temp_clips.append(clip_name)
 
-    # কনক্যাটেনেশন (Concatenation) ফাইল তৈরি
+    # কনক্যাটেনেশন (Concatenation) তালিকা তৈরি
     concat_list = "concat_list.txt"
     with open(concat_list, "w") as f:
         for clip in temp_clips:
@@ -80,7 +79,7 @@ def process_multi_image_video():
 
     final_output = "final_shorts_temp.mp4"
 
-    # ব্যাকগ্রাউন্ড মিউজিক মার্জ করা
+    # ব্যাকগ্রাউন্ড অডিও মার্জ করা
     if os.path.exists(AUDIO_FILE):
         ffmpeg_final = [
             'ffmpeg', '-y',
@@ -95,16 +94,14 @@ def process_multi_image_video():
             '-shortest',
             final_output
         ]
-    else:
-        final_output = combined_video
-
-    if os.path.exists(AUDIO_FILE):
         res = subprocess.run(ffmpeg_final, capture_output=True, text=True)
         if res.returncode != 0:
             print(f"FFmpeg Final Merge Error: {res.stderr}")
             sys.exit(1)
+    else:
+        final_output = combined_video
 
-    # টেম্পোরারি ক্লিপ ফাইলগুলো মুছে ফেলা
+    # টেম্পোরারি ফাইল রিমুভ করা
     for clip in temp_clips:
         if os.path.exists(clip):
             os.remove(clip)
@@ -113,7 +110,7 @@ def process_multi_image_video():
     if os.path.exists(combined_video) and combined_video != final_output:
         os.remove(combined_video)
 
-    print("Multi-Photo HD Video Created Successfully!")
+    print("Ultra-Smooth Multi-Photo HD Video Created Successfully!")
     return final_output
 
 def upload_to_youtube(video_filename):
