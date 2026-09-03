@@ -10,7 +10,7 @@ IMAGE_FOLDER = "images"
 AUDIO_FILE = "bg_music.mp3"
 
 # =========================================================================
-# থাম্বনেল হিসেবে 'thumbnail.png' ফাইলটি সেট করা হয়েছে
+# থাম্বনেল হিসেবে 'thumbnail.png' ফাইলটি সেট করা হয়েছে
 # =========================================================================
 FIXED_THUMBNAIL_IMAGE = "thumbnail.png"
 
@@ -71,14 +71,15 @@ def process_multi_image_video():
             f"zoompan=z='{zoom_expr}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={frames_count}:s={RESOLUTION}:fps=60"
         )
 
+        # ১. স্পিড বাড়ানোর জন্য অপটিমাইজড FFmpeg কমান্ড (ultrafast & crf 23)
         ffmpeg_clip_cmd = [
             'ffmpeg', '-y',
             '-loop', '1',
             '-i', img_path,
             '-vf', zoom_filter,
             '-c:v', 'libx264',
-            '-preset', 'fast',
-            '-crf', '18',
+            '-preset', 'ultrafast',
+            '-crf', '23',
             '-t', str(per_clip_duration),
             '-pix_fmt', 'yuv420p',
             clip_name
@@ -139,9 +140,9 @@ def process_multi_image_video():
         os.remove(combined_video)
 
     print("Ultra-Smooth Multi-Photo HD Video Created Successfully!")
-    return final_output, random_selected
+    return final_output, random_selected, thumb_path
 
-def upload_to_youtube(video_filename):
+def upload_to_youtube(video_filename, thumb_path):
     print("--- 2. Uploading Video to YouTube ---")
     
     refresh_token = os.environ.get("YOUTUBE_REFRESH_TOKEN")
@@ -190,12 +191,25 @@ def upload_to_youtube(video_filename):
         if status:
             print(f"Uploaded {int(status.progress() * 100)}%")
 
-    print(f"Uploaded successfully! Video ID: {response.get('id')}\n")
+    video_id = response.get('id')
+    print(f"Uploaded successfully! Video ID: {video_id}\n")
+
+    # ২. সরাসরি কাস্টম থাম্বনেল সেট করা
+    if os.path.exists(thumb_path):
+        print("--- Setting Custom Thumbnail via YouTube API ---")
+        try:
+            youtube.thumbnails().set(
+                videoId=video_id,
+                media_body=MediaFileUpload(thumb_path)
+            ).execute()
+            print("Custom Thumbnail set successfully!")
+        except Exception as e:
+            print(f"Custom Thumbnail Set Failed: {e}")
 
 if __name__ == "__main__":
-    vid_file, images_to_delete = process_multi_image_video()
+    vid_file, images_to_delete, thumb_file = process_multi_image_video()
     try:
-        upload_to_youtube(vid_file)
+        upload_to_youtube(vid_file, thumb_file)
         
         print("--- Cleaning up used images (Preserving Thumbnail) ---")
         for img_path in images_to_delete:
