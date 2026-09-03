@@ -10,14 +10,13 @@ IMAGE_FOLDER = "images"
 AUDIO_FILE = "bg_music.mp3"
 
 # =========================================================================
-# আপনার থাম্বনেল ছবিটির সঠিক নাম ও এক্সটেনশন (.jpg / .png) নিচে বসিয়ে দিন
+# থাম্বনেল হিসেবে 'thumbnail.png' ফাইলটি সেট করা হয়েছে
 # =========================================================================
 FIXED_THUMBNAIL_IMAGE = "thumbnail.png"
 
 RESOLUTION = "1080x1920"
 WIDTH, HEIGHT = RESOLUTION.split('x')
 
-# ভিডিও টাইটেলের লিস্ট
 TITLES = [
     "360° Luxury Handcrafted Jewelry Showcase ✨ #shorts #jewelry",
     "Exquisite Gold & Diamond Jewelry Design 💎 #shorts #cad",
@@ -33,7 +32,6 @@ def process_multi_image_video():
         print(f"Error: Folder '{IMAGE_FOLDER}' not found!")
         sys.exit(1)
 
-    # ফিক্সড থাম্বনেল ছাড়া বাকি অন্যান্য ছবি ফিল্টার করা
     other_images = [
         f for f in os.listdir(IMAGE_FOLDER) 
         if f.lower().endswith(('.png', '.jpg', '.jpeg')) and f != FIXED_THUMBNAIL_IMAGE
@@ -48,23 +46,20 @@ def process_multi_image_video():
         print("Error: Need at least 2 other images besides the thumbnail!")
         sys.exit(1)
 
-    # অন্যান্য ছবি থেকে ২-৪টি র্যান্ডম ছবি নেওয়া
     select_count = random.randint(2, 4)
     num_to_select = min(select_count, len(other_images))
     random_selected = [os.path.join(IMAGE_FOLDER, img) for img in random.sample(other_images, num_to_select)]
 
-    # প্রথম স্থানে ফিক্সড থাম্বনেল থাকবে, তারপর বাকি সিলেক্ট হওয়া ছবিগুলো
     selected_images = [thumb_path] + random_selected
     print(f"Selected Images (Thumbnail First): {selected_images}")
 
     per_clip_duration = random.choice([5, 6])
-    frames_count = per_clip_duration * 60  # 60 FPS
+    frames_count = per_clip_duration * 60
 
     temp_clips = []
     for idx, img_path in enumerate(selected_images):
         clip_name = f"temp_clip_{idx}.mp4"
         
-        # জুম ইন ও জুম আউট ইফেক্ট
         if idx % 2 == 0:
             zoom_expr = "min(1.0+0.0005*on,1.15)"
         else:
@@ -96,7 +91,6 @@ def process_multi_image_video():
             
         temp_clips.append(clip_name)
 
-    # সব ক্লিপ মার্জ করার লিস্ট তৈরি
     concat_list = "concat_list.txt"
     with open(concat_list, "w") as f:
         for clip in temp_clips:
@@ -115,7 +109,6 @@ def process_multi_image_video():
 
     final_output = "final_shorts_temp.mp4"
 
-    # ব্যাকগ্রাউন্ড মিউজিক যুক্ত করা
     if os.path.exists(AUDIO_FILE):
         ffmpeg_final = [
             'ffmpeg', '-y',
@@ -137,7 +130,6 @@ def process_multi_image_video():
     else:
         final_output = combined_video
 
-    # টেম্পোরারি ক্লিপ মুছে ফেলা
     for clip in temp_clips:
         if os.path.exists(clip):
             os.remove(clip)
@@ -147,8 +139,6 @@ def process_multi_image_video():
         os.remove(combined_video)
 
     print("Ultra-Smooth Multi-Photo HD Video Created Successfully!")
-    
-    # শুধু র্যান্ডম সিলেক্ট করা অন্য ছবিগুলো রিটার্ন করা হবে (যাতে থাম্বনেল অক্ষত থাকে)
     return final_output, random_selected
 
 def upload_to_youtube(video_filename):
@@ -207,7 +197,6 @@ if __name__ == "__main__":
     try:
         upload_to_youtube(vid_file)
         
-        # আপলোড শেষে থাম্বনেল ঠিক রেখে শুধু বাকি ব্যবহৃত ছবি মুছে ফেলা
         print("--- Cleaning up used images (Preserving Thumbnail) ---")
         for img_path in images_to_delete:
             if os.path.exists(img_path):
