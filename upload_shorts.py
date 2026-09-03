@@ -9,10 +9,18 @@ from googleapiclient.http import MediaFileUpload
 IMAGE_FOLDER = "images"
 AUDIO_FILE = "bg_music.mp3"
 
-# রেজোলিউশন কনফিগারেশন (প্রয়োজন অনুযায়ী পরিবর্তন করতে পারেন)
-# HD Formats: "1080x1920" | 4K Formats: "2160x3840"
+# Aspect Ratio: 9:16 (HD 1080x1920)
 RESOLUTION = "1080x1920" 
 WIDTH, HEIGHT = RESOLUTION.split('x')
+
+# ভিডিও টাইটেলের লিস্ট (ডায়নামিক করার জন্য)
+TITLES = [
+    "360° Luxury Handcrafted Jewelry Showcase ✨ #shorts #jewelry",
+    "Exquisite Gold & Diamond Jewelry Design 💎 #shorts #cad",
+    "Handcrafted Luxury Pendant Showcase 🌟 #shorts #jewelry",
+    "Unique Custom Jewelry CAD Design 360° ✨ #shorts #gold",
+    "Premium Artisan Jewelry Collection 💍 #shorts #luxury"
+]
 
 def process_multi_image_video():
     print("--- 1. Selecting Images for Multi-Photo Video ---")
@@ -34,7 +42,7 @@ def process_multi_image_video():
     selected_images = [os.path.join(IMAGE_FOLDER, img) for img in random.sample(images, num_to_select)]
     print(f"Selected {len(selected_images)} Images: {selected_images}")
 
-    # ১৫-৩০ সেকেন্ডের মধ্যে ভিডিও রাখতে প্রতি ছবির সময় নির্ধারণ (৫ থেকে ৬ সেকেন্ড)
+    # ১৫-৩০ সেকেন্ডের মধ্যে ভিডিও রাখতে প্রতি ছবির সময় ৫-৬ সেকেন্ড
     per_clip_duration = random.choice([5, 6])
     frames_count = per_clip_duration * 60  # 60 FPS
 
@@ -48,7 +56,7 @@ def process_multi_image_video():
         else:
             zoom_expr = "max(1.15-0.0005*on,1.0)"
 
-        # Aspect Ratio 9:16 ফিক্স করে নির্ধারিত রেজোলিউশনে ক্রপ ও স্কেল করা
+        # Aspect Ratio 9:16 (1080x1920) ফিক্স করা
         zoom_filter = (
             f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase,"
             f"crop={WIDTH}:{HEIGHT},"
@@ -75,7 +83,7 @@ def process_multi_image_video():
             
         temp_clips.append(clip_name)
 
-    # ভিডিও মার্জ করার তালিকা তৈরি
+    # ভিডিও মার্জ করার কনক্যাট লিস্ট
     concat_list = "concat_list.txt"
     with open(concat_list, "w") as f:
         for clip in temp_clips:
@@ -94,7 +102,7 @@ def process_multi_image_video():
 
     final_output = "final_shorts_temp.mp4"
 
-    # ব্যাকগ্রাউন্ড মিউজিক যুক্ত করা
+    # ব্যাকগ্রাউন্ড মিউজিক মার্জ করা
     if os.path.exists(AUDIO_FILE):
         ffmpeg_final = [
             'ffmpeg', '-y',
@@ -116,7 +124,7 @@ def process_multi_image_video():
     else:
         final_output = combined_video
 
-    # টেম্পোরারি ফাইল রিমুভ করা
+    # টেম্পোরারি ক্লিপ রিমুভ
     for clip in temp_clips:
         if os.path.exists(clip):
             os.remove(clip)
@@ -149,9 +157,12 @@ def upload_to_youtube(video_filename):
 
     youtube = build("youtube", "v3", credentials=creds)
 
+    # লিস্ট থেকে র্যান্ডম টাইটেল সিলেক্ট করা
+    selected_title = random.choice(TITLES)
+
     request_body = {
         "snippet": {
-            "title": "360° Luxury Handcrafted Jewelry Showcase ✨ #shorts #jewelry",
+            "title": selected_title,
             "description": "Exclusive luxury handcrafted gold & diamond jewelry design showcase.\n\n#jewelry #shorts #luxury #goldring #cad",
             "tags": ["jewelry", "shorts", "luxury", "gold", "ring"],
             "categoryId": "26"
@@ -182,8 +193,8 @@ if __name__ == "__main__":
     try:
         upload_to_youtube(vid_file)
         
-        # আপলোড সফল হওয়ার পর ব্যবহৃত ছবি ডিলিট করা
-        print("Cleaning up used images from repository...")
+        # আপলোড সফল হওয়ার পর নির্বাচিত ছবিগুলো স্থায়ীভাবে মুছে ফেলা
+        print("--- Cleaning up used images ---")
         for img_path in used_images:
             if os.path.exists(img_path):
                 os.remove(img_path)
