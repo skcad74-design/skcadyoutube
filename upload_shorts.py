@@ -12,7 +12,7 @@ AUDIO_FILE = "bg_music.mp3"
 # =========================================================================
 # আপনার থাম্বনেল ছবিটির সঠিক নাম ও এক্সটেনশন (.jpg / .png) নিচে বসিয়ে দিন
 # =========================================================================
-FIXED_THUMBNAIL_IMAGE = "thumbnail.jpg"
+FIXED_THUMBNAIL_IMAGE = "thumbnail.png"
 
 RESOLUTION = "1080x1920"
 WIDTH, HEIGHT = RESOLUTION.split('x')
