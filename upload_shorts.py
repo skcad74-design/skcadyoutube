@@ -8,10 +8,6 @@ from googleapiclient.http import MediaFileUpload
 
 IMAGE_FOLDER = "images"
 AUDIO_FILE = "bg_music.mp3"
-
-# =========================================================================
-# থাম্বনেল হিসেবে 'thumbnail.png' ফাইলটি সেট করা হয়েছে
-# =========================================================================
 FIXED_THUMBNAIL_IMAGE = "thumbnail.png"
 
 RESOLUTION = "1080x1920"
@@ -50,6 +46,7 @@ def process_multi_image_video():
     num_to_select = min(select_count, len(other_images))
     random_selected = [os.path.join(IMAGE_FOLDER, img) for img in random.sample(other_images, num_to_select)]
 
+    # থাম্বনেলকে একদম প্রথম ছবি হিসেবে নিশ্চিত করা হচ্ছে
     selected_images = [thumb_path] + random_selected
     print(f"Selected Images (Thumbnail First): {selected_images}")
 
@@ -57,6 +54,7 @@ def process_multi_image_video():
     frames_count = per_clip_duration * 60
 
     temp_clips = []
+    
     for idx, img_path in enumerate(selected_images):
         clip_name = f"temp_clip_{idx}.mp4"
         
@@ -71,7 +69,6 @@ def process_multi_image_video():
             f"zoompan=z='{zoom_expr}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={frames_count}:s={RESOLUTION}:fps=60"
         )
 
-        # ১. স্পিড বাড়ানোর জন্য অপটিমাইজড FFmpeg কমান্ড (ultrafast & crf 23)
         ffmpeg_clip_cmd = [
             'ffmpeg', '-y',
             '-loop', '1',
@@ -153,12 +150,17 @@ def upload_to_youtube(video_filename, thumb_path):
         print("Error: YouTube secrets are missing!")
         sys.exit(1)
 
+    # Scopes এর মধ্যে পূর্ণাংগ permissions যুক্ত করা হয়েছে
     creds = Credentials(
         token=None,
         refresh_token=refresh_token,
         token_uri="https://oauth2.googleapis.com/token",
         client_id=client_id,
         client_secret=client_secret,
+        scopes=[
+            "https://www.googleapis.com/auth/youtube.upload",
+            "https://www.googleapis.com/auth/youtube"
+        ]
     )
 
     youtube = build("youtube", "v3", credentials=creds)
@@ -194,13 +196,13 @@ def upload_to_youtube(video_filename, thumb_path):
     video_id = response.get('id')
     print(f"Uploaded successfully! Video ID: {video_id}\n")
 
-    # ২. সরাসরি কাস্টম থাম্বনেল সেট করা
+    # কাস্টম থাম্বনেল আপলোড অংশ (মাইন টাইপ সঠিকভাবে দেওয়া হয়েছে)
     if os.path.exists(thumb_path):
         print("--- Setting Custom Thumbnail via YouTube API ---")
         try:
             youtube.thumbnails().set(
                 videoId=video_id,
-                media_body=MediaFileUpload(thumb_path)
+                media_body=MediaFileUpload(thumb_path, mimetype='image/png')
             ).execute()
             print("Custom Thumbnail set successfully!")
         except Exception as e:
