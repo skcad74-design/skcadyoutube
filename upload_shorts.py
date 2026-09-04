@@ -7,7 +7,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-# কোড যেন কোনো কারণে না ঝুলে থাকে
+# কোড যাতে কোনো অবস্থাতেই ইনফিনিট ওয়েটিংয়ে না থাকে
 socket.setdefaulttimeout(30)
 
 IMAGE_FOLDER = "images"
@@ -46,35 +46,28 @@ def process_multi_image_video():
 
     print(f"Selected Images: {selected_images}")
 
-    per_clip_duration = random.choice([5, 6])
-    # ৩০ এফপিএস ব্যবহার করায় রেন্ডারিং ১০ গুণ দ্রুত হবে
-    target_fps = 30
-    frames_count = per_clip_duration * target_fps
-
+    per_clip_duration = random.choice([4, 5])
     temp_clips = []
+
+    # zoompan ফিল্টার পুরোপুরি বাদ দিয়ে হালকা ফিল্টার স্কেলিং করা হয়েছে
     for idx, img_path in enumerate(selected_images):
         clip_name = f"temp_clip_{idx}.mp4"
         
-        if idx % 2 == 0:
-            zoom_expr = "min(1.0+0.001*on,1.15)"
-        else:
-            zoom_expr = "max(1.15-0.001*on,1.0)"
-
-        zoom_filter = (
+        filter_complex = (
             f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase,"
             f"crop={WIDTH}:{HEIGHT},"
-            f"zoompan=z='{zoom_expr}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={frames_count}:s={RESOLUTION}:fps={target_fps}"
+            f"fade=t=in:st=0:d=0.5,fade=t=out:st={per_clip_duration-0.5}:d=0.5"
         )
 
         ffmpeg_clip_cmd = [
             'ffmpeg', '-y',
             '-loop', '1',
             '-i', img_path,
-            '-vf', zoom_filter,
+            '-vf', filter_complex,
             '-c:v', 'libx264',
             '-preset', 'ultrafast',
-            '-tune', 'stillimage',
-            '-crf', '26',
+            '-crf', '28',
+            '-r', '30',
             '-t', str(per_clip_duration),
             '-pix_fmt', 'yuv420p',
             clip_name
@@ -134,7 +127,7 @@ def process_multi_image_video():
     if os.path.exists(combined_video) and combined_video != final_output:
         os.remove(combined_video)
 
-    print("Multi-Photo HD Video Created Successfully!")
+    print("Fast Video Created Successfully!")
     return final_output, selected_images
 
 def upload_to_youtube(video_filename):
