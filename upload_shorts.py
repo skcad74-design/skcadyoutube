@@ -2,13 +2,16 @@ import os
 import sys
 import random
 import subprocess
+import socket
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
+# নেটওয়ার্ক সকেটের জন্য ৩০ সেকেন্ডের গ্লোবাল টাইমআউট (যাতে কোড ঝুলে না থাকে)
+socket.setdefaulttimeout(30)
+
 IMAGE_FOLDER = "images"
 AUDIO_FILE = "bg_music.mp3"
-FIXED_THUMBNAIL_IMAGE = "thumbnail.png"
 
 RESOLUTION = "1080x1920"
 WIDTH, HEIGHT = RESOLUTION.split('x')
@@ -28,33 +31,25 @@ def process_multi_image_video():
         print(f"Error: Folder '{IMAGE_FOLDER}' not found!")
         sys.exit(1)
 
-    other_images = [
-        f for f in os.listdir(IMAGE_FOLDER) 
-        if f.lower().endswith(('.png', '.jpg', '.jpeg')) and f != FIXED_THUMBNAIL_IMAGE
+    images = [
+        os.path.join(IMAGE_FOLDER, f) for f in os.listdir(IMAGE_FOLDER) 
+        if f.lower().endswith(('.png', '.jpg', '.jpeg'))
     ]
     
-    thumb_path = os.path.join(IMAGE_FOLDER, FIXED_THUMBNAIL_IMAGE)
-    if not os.path.exists(thumb_path):
-        print(f"Error: Fixed thumbnail image '{FIXED_THUMBNAIL_IMAGE}' not found in '{IMAGE_FOLDER}'!")
-        sys.exit(1)
-
-    if len(other_images) < 2:
-        print("Error: Need at least 2 other images besides the thumbnail!")
+    if len(images) < 2:
+        print("Error: Need at least 2 images in the folder!")
         sys.exit(1)
 
     select_count = random.randint(2, 4)
-    num_to_select = min(select_count, len(other_images))
-    random_selected = [os.path.join(IMAGE_FOLDER, img) for img in random.sample(other_images, num_to_select)]
+    num_to_select = min(select_count, len(images))
+    selected_images = random.sample(images, num_to_select)
 
-    # থাম্বনেলকে একদম প্রথম ছবি হিসেবে নিশ্চিত করা হচ্ছে
-    selected_images = [thumb_path] + random_selected
-    print(f"Selected Images (Thumbnail First): {selected_images}")
+    print(f"Selected Images: {selected_images}")
 
     per_clip_duration = random.choice([5, 6])
     frames_count = per_clip_duration * 60
 
     temp_clips = []
-    
     for idx, img_path in enumerate(selected_images):
         clip_name = f"temp_clip_{idx}.mp4"
         
@@ -136,10 +131,10 @@ def process_multi_image_video():
     if os.path.exists(combined_video) and combined_video != final_output:
         os.remove(combined_video)
 
-    print("Ultra-Smooth Multi-Photo HD Video Created Successfully!")
-    return final_output, random_selected, thumb_path
+    print("Multi-Photo HD Video Created Successfully!")
+    return final_output, selected_images
 
-def upload_to_youtube(video_filename, thumb_path):
+def upload_to_youtube(video_filename):
     print("--- 2. Uploading Video to YouTube ---")
     
     refresh_token = os.environ.get("YOUTUBE_REFRESH_TOKEN")
@@ -150,17 +145,12 @@ def upload_to_youtube(video_filename, thumb_path):
         print("Error: YouTube secrets are missing!")
         sys.exit(1)
 
-    # Scopes এর মধ্যে পূর্ণাংগ permissions যুক্ত করা হয়েছে
     creds = Credentials(
         token=None,
         refresh_token=refresh_token,
         token_uri="https://oauth2.googleapis.com/token",
         client_id=client_id,
         client_secret=client_secret,
-        scopes=[
-            "https://www.googleapis.com/auth/youtube.upload",
-            "https://www.googleapis.com/auth/youtube"
-        ]
     )
 
     youtube = build("youtube", "v3", credentials=creds)
@@ -196,24 +186,12 @@ def upload_to_youtube(video_filename, thumb_path):
     video_id = response.get('id')
     print(f"Uploaded successfully! Video ID: {video_id}\n")
 
-    # কাস্টম থাম্বনেল আপলোড অংশ (মাইন টাইপ সঠিকভাবে দেওয়া হয়েছে)
-    if os.path.exists(thumb_path):
-        print("--- Setting Custom Thumbnail via YouTube API ---")
-        try:
-            youtube.thumbnails().set(
-                videoId=video_id,
-                media_body=MediaFileUpload(thumb_path, mimetype='image/png')
-            ).execute()
-            print("Custom Thumbnail set successfully!")
-        except Exception as e:
-            print(f"Custom Thumbnail Set Failed: {e}")
-
 if __name__ == "__main__":
-    vid_file, images_to_delete, thumb_file = process_multi_image_video()
+    vid_file, images_to_delete = process_multi_image_video()
     try:
-        upload_to_youtube(vid_file, thumb_file)
+        upload_to_youtube(vid_file)
         
-        print("--- Cleaning up used images (Preserving Thumbnail) ---")
+        print("--- Cleaning up used images ---")
         for img_path in images_to_delete:
             if os.path.exists(img_path):
                 os.remove(img_path)
